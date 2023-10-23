@@ -8,5 +8,5 @@
 2. Codebreaker has 12 rounds to guess the secret code
 3. If a guess pin matches both color and position, get a black pin feedback
 4. If a guess pin matches only color, get a white pin feedback
-5. If a guess pin doesn't match, get no feedback 
+5. If a guess pin doesn't match, get nil feedback 
 ## Steps
