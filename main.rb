@@ -13,7 +13,6 @@ class Mastermind
     greet
     set_secret
     play_rounds
-    evaluate_guess
   end
 
   private
@@ -41,67 +40,62 @@ class Mastermind
     guess.size == 4 && guess.all? { |letter| ALPHABETS.include?(letter) }
   end  
 
-  def display_result
+  def display
     @guess.each_with_index do |guess, index|
-      puts "#{guess.join} | #{@feedback[index].join}\n"
+        puts "Round #{index + 1}: #{@guess[index].join} #{@feedback[index].join}\n"
     end
   end
 
   def end_game
     if @winner == "codebreaker"
       puts "Congratulations! You guessed the secret code in #{@round} rounds!"
-    else
+    elsif @winner == "codemaker"
       puts "You lost! The secret code was #{@secret.join}"
     end
   end
   
   def evaluate_guess(guess)
-    if guess == @secret
-      @feedback << ["o", "o", "o", "o"]
-      @winner = "codebreaker"
-      display_result
-      end_game
-    else
-      
-      secret = @secret
-      
-      secret.each_with_index do |letter, index|
-        if letter == guess[index]
-          feedback << "o"
-          secret = secret - letter
-          guess = guess - letter
+    feedback = []
+
+    guess.each_with_index do |letter, index|
+      if letter == @secret[index]
+        feedback << "o"
       end
-        
-      guess.each do |letter|
-        if secret.include?(letter)
-          feedback << "x"
-          secret = secret - letter
-          guess = guess - letter
+    end
+
+    guess.each_with_index do |letter, index|
+      if letter != @secret[index] && @secret.include?(letter)
+        feedback << "x"
       end
-        
-      guess.size.times do
-        feedback << "n"
-      end   
-      display_result
-      @round += 1
-    end  
+    end
+
+    (4 - feedback.size).times { feedback << "n" }
+
+    @feedback << feedback
   end
 
   def play_rounds
-    puts "Round #{@round} enter 4 alphabets (a, b, c, d, e, f) with no spaces"
+    puts "Round #{@round}: enter 4 alphabets"
     guess = gets.chomp.downcase.split('')
-    if !guess_valid?
+    if !guess_valid?(guess)
       puts "Invalid guess. Try again."
       play_rounds
     else
       @guess << guess
-      evaluate_guess
+      evaluate_guess(guess)
     end
     
-    if @round < 12
-      play_rounds
-    else
+    display
+
+    if @secret == @guess.last
+      @winner = "codebreaker"
       end_game
+    elsif @round == 12
+      @winner = "codemaker"
+      end_game
+    else
+      @round += 1
+      play_rounds
     end
   end
 end
