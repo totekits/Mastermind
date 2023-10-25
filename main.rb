@@ -2,144 +2,149 @@ class Mastermind
   NUMBERS = (1..6).to_a
 
   def initialize
-    @user_role = ""
     @round = 1
-    @secret = []
-    @guesses = []
-    @feedbacks = []
-    @input_pool = [[1, 1, 1, 1]]
+    @user = String.new
+    @secret = Array.new
+    @guesses = Array.new
+    @feedbacks = Array.new
   end
 
   def play
     choose_role
-    if @user_role == "b"
-      generate_secret
-      play_rounds  
-    else
-      set_secret
-      generate_rounds
-    end
+    set_secret
+    guess_secret
   end
 
   private
 
   def choose_role
-    feedback_explanation = "Each round, feedback will be given:\n" +
+    game_explanation = "Each round, feedback will be given:\n" +
       "'o' = correct number, correct position\n" +
-      "'x' = correct number, wrong position\n"
-    puts "Welcome to Mastermind!\nChoose your role:\n" +
-      "Type 'b' to choose Codebreaker\nType 'm' to choose Codemaker\nPress Enter to continue.."
-    input = gets.chomp.downcase
-    if input == "b"
-      puts "You are now the Codebreaker!\nYou must break the code within 12 rounds."
-      puts "#{feedback_explanation}"
-      puts "The code will be a 4-digit number ranging from 1 to 6, e.g., 1234.\n" + 
-      "To submit your guess, type the number and press Enter.." +
-      "Good luck!\nPress Enter to start.."
-    elsif input == "m"
-      puts "You are now the Codemaker!\n" +
-        "You will set the code for the Codebreaker to break within 12 rounds."
-      puts "#{feedback_explanation}"
-      puts "Good luck!\nPress Enter to start.."
-    else 
-      puts "Invalid input. Please try again."
-      choose_role
+      "'x' = correct number, wrong position\n" +
+      "The code will be a 4-digit number ranging from 1 to 6, e.g., 1234.\n" + 
+      "Good luck!\n" +
+      "Press Enter to start.."
+
+    loop do
+      puts "Welcome to Mastermind!\n" +
+        "Choose your role:\n" +
+        "Enter 'b' to choose Codebreaker\n" +
+        "Enter 'm' to choose Codemaker\n" +
+    
+      @user = gets.chomp.downcase
+    
+      if @user == "b"
+        puts "You are now the Codebreaker!\n" +
+          "You must guess the code within 12 rounds.\n" +
+          "#{game_explanation}"
+        break
+      elsif @user == "m"
+        puts "You are now the Codemaker!\n" +
+          "You must set a code for the Codebreaker to guess within 12 rounds." +
+          "#{game_explanation}"
+        break
+      else 
+        puts "Invalid choice. Please choose again."
+      end
     end
-    @user_role = input
+
     gets
   end
-
-  def input_valid?(input)
-    input.size == 4 && input.all? { |num| NUMBERS.include?(num) }
-  end  
   
-  def generate_secret
-    @secret = NUMBERS.sample(4)
-  end
-
   def set_secret
-    puts "Type a 4-digit number ranging from 1 to 6, e.g., 1234.\n" + 
-      "Then, press Enter to set the code.."
-    input = gets.chomp.chars.map(&:to_i)
-    if input_valid?(input)
-      @secret = input
-    else
-      puts "Invalid input. Please try again."
-      set_secret
-    end
-    puts "The code has been set!\nPress Enter to start.."
-    gets
-  end
-  
-  def end_game
-    if @guesses.last == @secret
-      puts "\nCodebreaker wins!\n" +
-        "The secret code: #{@secret.join.to_i} was guessed in #{@round - 1} rounds!"
-    else
-      puts "\nCodemaker wins!\n" +
-        "The secret code: #{@secret.join.to_i} was never guessed!"
-    end
+    if @user == "b"
+       @secret = NUMBERS.sample(4)
+    else 
+      loop do
+        puts "Enter your secret code"
+        code = gets.chomp.chars.map(&:to_i)
+    
+        if code.size == 4 && code.all? { |num| NUMBERS.include?(num) }
+          @secret = code
+          puts "The code has been set!\nPress Enter to start.."
+          gets
+          break
+        else
+          puts "Invalid code. Please try again."
+      end
+    end    
   end
 
   def display
     @guesses.each_with_index do |guess, index|
-        puts "Round #{index + 1}: #{@guesses[index].join} #{@feedbacks[index].join}\n"
+      puts "Round #{index + 1}: #{@guesses[index].join} #{@feedbacks[index].join}"
     end
   end
-  
-  def get_feedback(input)
-    secret = @secret.dup
-    feedback = []
     
-    input.each_with_index do |num, index|
+  def get_feedback(guess)
+    secret = @secret.dup
+    feedback = Array.new
+
+    guess.each_with_index do |num, index|
       if num == secret[index]
         feedback << "o"
         secret[index] = nil
       end
     end
 
-    input.each do |num|
+    guess.each do |num|
       if secret.include?(num)
         feedback << "x"
         secret[secret.index(num)] = nil
       end
     end
-    
+
     @feedbacks << feedback
   end
     
-  def play_rounds 
-    while @round <= 12 && @guesses.last != @secret
-      puts "Round #{@round}: What's your guess?"
-      input = gets.chomp.chars.map(&:to_i)
-      if !input_valid?(input)
-        puts "Invalid input. Try again."
-        play_rounds
-      else
-        @guesses << input
-        get_feedback(input)
+  def guess_secret
+    if @user == "b"
+      loop do
+        puts "Round #{@round}: Enter your guess?"
+        guess = gets.chomp.chars.map(&:to_i)
+        if guess.size != 4 || guess.any? { |num| !NUMBERS.include?(num) }
+          puts "Invalid guess.\n" +
+            "Please try again with a 4-digit number using digits 1 to 6."
+        else
+          @guesses << guess
+          get_feedback(guess)
+          display
+          if guess == @secret
+            puts "You win, you guessed the code in Round: #{@round}!"
+            break
+          elsif @round == 12
+            puts "You lose, the code was #{@secret.join.to_i}."
+            break
+          else
+            @round += 1
+          end
+        end
+      end
+      
+    else # code for computer to guess
+      loop do  # evaluate feedbacks and get guess
+        if @feedbacks.empty?
+          guess = Array.new(4, 1)
+        else
+          if 
+          
+        end
+        # get feedback
+        @guess << guess
+        get_feedback(guess)
         display
-        @round += 1
+        if guess == @secret
+          puts "You lose, the code was guessed in Round: #{@round}!"
+          break
+        elsif @round == 12
+          puts "You win, the code was never guessed!"
+          break
+        else
+          @round += 1
+        end
       end
     end
-    end_game
-  end
-
-  def generate_rounds
-    while @round <= 12 && @guesses.last != @secret
-      # generate input
-      input = @input_pool.last
-      # pass input to get feedback
-      @guesses << input
-      get_feedback(input)
-      @round += 1
-      
-    # assess feedback and create next input
-    ## 1. identify the 4 numbers, try till 1-6 used or fb = ooxx
-    ## 2. try till fb = ooxx
-    ## 3. try till correct
-    end
-  end
+  end 
 end
 
 Mastermind.new.play
