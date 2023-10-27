@@ -26,7 +26,8 @@ I decided not to implement well-known algorithms like Knuth's for the computer t
 ### Find correct positions
 - start the next round with numbers in the array,
   - if feedback is xxxx or oxxx, rotate the guess and use that new combination to guess in the next round
-  - if feedback is ooxx, swap the third and forth numbers in the guess and use the new combination to guess in the next round
+  - if feedback is ooxx, and the last two digits aren't the same, swap the third and forth numbers in the guess and use the new combination to guess in the next round
+  - if feedback is ooxx, but the last two digits are the same, rotate instead of swap
 - repeat
 ## New things I learned
 - #gets
