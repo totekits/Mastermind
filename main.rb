@@ -1,36 +1,38 @@
 class Mastermind
   def initialize
-    @round = 1
     @user_is_codebreaker = false
-    @secret = Array.new
-    @guesses = Array.new
-    @feedbacks = Array.new
-    @combos = (1..6).to_a.repeated_permutation(4).to_a
-    @combo = Array.new
     @winner = false
+    @round = 1
+    @secret = []
+    @guesses = []
+    @feedbacks = []
   end
 
   def play
     choose_role
-    set_secret
-    guess_secret
+    
+    if @user_is_codebreaker == true
+      codebreaker
+    else
+      codemaker
+    end
   end
 
   private
 
   def choose_role
     game_explanation = "Each round, feedback will be given:\n" +
-      "'o' = correct number, correct position\n" +
-      "'x' = correct number, wrong position\n" +
+      "'o' = correct number and correct position\n" +
+      "'x' = correct number but wrong position\n" +
       "The code will be a 4-digit number ranging from 1 to 6, e.g., 1234.\n" + 
       "Good luck!\n" +
-      "Enter to start.."
+      "Press Enter to start.."
     
     loop do
       puts "Welcome to Mastermind!\n" +
         "Choose your role:\n" +
-        "Enter 'b' to choose Codebreaker\n" +
-        "Enter 'm' to choose Codemaker\n"
+        "Type 'b' and press Enter to choose Codebreaker\n" +
+        "Type 'm' and press Enter to choose Codemaker\n"
       
       choice = gets.chomp
     
@@ -52,152 +54,142 @@ class Mastermind
 
     gets
   end
+
+  def check_win
+    if @user_is_codebreaker == true && @guesses.last == @secret
+        puts "You win!\n" + 
+          "The secret code is #{@secret.join}"
+        @winner = true
+    elsif @user_is_codebreaker == true && @round == 12 
+        puts "You lose!\n" +
+          "The secret code is #{@secret.join}"
+        @winner = true
+    elsif @user_is_codebreaker == false && @guesses.last == @secret
+        puts "You lose!\n" +
+          "The secret code #{@secret.join} was guessed in round #{@round}."
+        @winner = true
+    elsif @user_is_codebreaker == false && @round == 12
+        puts "You win!\n" +
+          "The secret code #{@secret.join} was never guessed."
+        @winner = true
+    end
+  end
   
-  def set_secret
-    if @user_is_codebreaker == true
-      @secret = Array.new(4) { rand(1..6) }
-      puts "The secret code has been set!\nEnter to continue.."
-      gets
-    else 
-      loop do
-        puts "Enter your secret code"
-        secret = gets.chomp.chars.map(&:to_i)
-    
-        if secret.size == 4 && secret.all? { |num| (1..6).include?(num) }
-          @secret = secret
-          puts "The secret code has been set!\nEnter to continue.."
-          gets
-          break
-        else
-          puts "Invalid code.\n" +
-            "Please try again with a 4-digit number using digits 1 to 6."
-        end
-      end
-    end
-  end
-
   def display
-    @guesses.each_with_index do |guess, index|
-      if index < 9
-        puts "Round #{index + 1}:  #{@guesses[index].join} #{@feedbacks[index].join}"
+    @guesses.each_with_index do |g, i|
+      if i < 9
+        puts "Round #{i + 1}:  #{@guesses[i].join} #{@feedbacks[i].join}"
       else 
-        puts "Round #{index + 1}: #{@guesses[index].join} #{@feedbacks[index].join}"
+        puts "Round #{i + 1}: #{@guesses[i].join} #{@feedbacks[i].join}"
       end
     end
   end
-    
-  def get_feedback(guess)
+  
+  def get_feedback
     secret = @secret.dup
-    feedback = Array.new
+    feedback = []
 
-    guess.each_with_index do |num, index|
-      if num == secret[index]
+    (@guesses.last).each_with_index do |n, i|
+      if n == secret[i]
         feedback << "o"
-        secret[index] = nil
+        secret[i] = nil
       end
     end
 
-    guess.each do |num|
-      if secret.include?(num)
+    (@guesses.last).each do |n|
+      if secret.include?(n)
         feedback << "x"
-        secret[secret.index(num)] = nil
+        secret[secret.index(n)] = nil
       end
     end
 
     @feedbacks << feedback
   end
-
-  def find_combo
-    if @feedbacks.last.empty? == true
-      @combos.reject! { |combo| combo.include?((@guesses.last)[0])}
-    else
-      @combos.delete(@guesses.last)
-      (@feedbacks.last.size).times do
-        @combo << ((@guesses.last[0]))
-      end
-      new_guess = Array.new
-      4.times do 
-        new_guess << ((@guesses.last[0]) + 1)
-      end
-      @combos.unshift(new_guess)
-    end
-  end
   
-  def find_positions
-    if @feedbacks.last == %w[x x x x]
-      @combos.delete(@guesses.last)
-      @combos.reject! do |combo|
-        combo.each_with_index.any? { |num, index| num == (@guesses.last)[index] }
-      end
-    elsif @feedbacks.last == %w[o x x x]
-      @combos.delete(@guesses.last)
-    elsif @feedbacks.last == %w[o o x x]
-      @combos.delete(@guesses.last)
-      new_guess = Array.new
-        new_guess << (@guesses.last)[0]
-        new_guess << (@guesses.last)[1]
-        new_guess << (@guesses.last)[3]
-        new_guess << (@guesses.last)[2]
-        @combos.unshift(new_guess)
-    else
-      @combos.reject! { |combo| combo.include?((@guesses.last)[0])}
-    end
-  end
-  
-  def check_win
-    if @user_is_codebreaker == true && @guesses.last == @secret
-        puts "You win!"
-        @winner = true
-    elsif @user_is_codebreaker == true && @round == 12 
-        puts "You lose!"
-        @winner = true
-    elsif @user_is_codebreaker == false && @guesses.last == @secret
-        puts "You lose!"
-        @winner = true
-    elsif @user_is_codebreaker == false && @round == 12
-        puts "You win!"
-        @winner = true
-    end
-  end
-
-  def guess_secret
-    if @user_is_codebreaker == true
-      loop do
-        puts "Round #{@round}: Enter your guess.."
-        guess = gets.chomp.chars.map(&:to_i)
-        if guess.size == 4 && guess.all? { |num| (1..6).include?(num) }
-          @guesses << guess
-          get_feedback(guess)
-          display
-          check_win
-          if @winner == true
-            break
-          end
-          @round += 1
-        else
-          puts "Invalid guess.\n" +
-            "Please try again with a 4-digit number using digits 1 to 6."
-        end
-      end
-    else 
-      loop do 
-        guess = @combos.first
+  def codebreaker
+    @secret = Array.new(4) { rand(1..6) }
+    
+    loop do
+      puts "Round #{@round}: Type your guess and press Enter.."
+      guess = gets.chomp.chars.map(&:to_i)
+      
+      if guess.size == 4 && guess.all? { |n| (1..6).include?(n) }
         @guesses << guess
-        get_feedback(guess)
-        if @combo.size < 4
-          find_combo
-        else  
-          find_positions
-        end        
+        get_feedback
         display
         check_win
+        
         if @winner == true
           break
         end
+        
         @round += 1
-        puts "Enter to continue.."
-        gets
+      else
+        puts "Invalid guess.\n" +
+          "Please try again with a 4-digit number using digits 1 to 6."
       end
+    end
+  end
+
+  def set_secret
+    loop do
+      puts "Type your secret code and press Enter.."
+      @secret = gets.chomp.chars.map(&:to_i)
+
+      if @secret.size == 4 && @secret.all? { |n| (1..6).include?(n) }
+        puts "The secret code has been set!\nPress Enter to continue.."
+        break
+      else
+        puts "Invalid code.\n" +
+          "Please try again with a 4-digit number using digits 1 to 6."
+      end
+    end
+
+    gets
+  end
+
+  def codemaker
+    combo = []
+    set_secret
+    
+    loop do
+      if @round == 1
+        @guesses << Array.new(4, 1)
+      elsif @round > 1
+        if combo.size < 4
+          @guesses << Array.new(4) { @guesses.last.sample + 1 }
+        elsif combo.size == 4 && @feedbacks.all? { |f| f.size < 4 }
+          @guesses << combo
+        elsif combo.size == 4
+          if @feedbacks.last == %w[x x x x] || @feedbacks.last == %w[o x x x] ||
+            (@feedbacks.last == %w[o o x x] && @guesses.last[2] == @guesses.last[3])
+            @guesses << @guesses.last.rotate
+          elsif @feedbacks.last == %w[o o x x] && @guesses.last[2] != @guesses.last[3]
+            guess = [@guesses.last[0], @guesses.last[1], @guesses.last[3], @guesses.last[2]]
+            while @guesses.include?(guess)
+              guess = guess.rotate
+            end
+            @guesses << guess
+          end
+        end
+      end
+
+      get_feedback
+
+      if combo.size < 4 && @feedbacks.last.include?("o")
+        @feedbacks.last.each { |n| combo << @guesses.last[0] }
+      end
+        
+      display
+      check_win
+      
+      if @winner == true
+        break
+      end
+      
+      @round += 1
+      puts "Enter to continue.."
+      gets
     end
   end
 end
